@@ -1,5 +1,5 @@
-🚗 Premium Auto Dealership Voice AI Agent
-Real-Time WebSocket-Powered Luxury Concierge
+## 🚗 Premium Auto Dealership Voice AI Agent
+**Real-Time WebSocket-Powered Luxury Concierge** 
 
 A sophisticated, full-stack AI concierge system designed for luxury auto dealerships. This system utilizes a bi-directional WebSocket architecture to provide near-instantaneous voice and text interactions, high-fidelity neural synthesis, and robust multi-agent orchestration.
 
@@ -18,37 +18,48 @@ A sophisticated, full-stack AI concierge system designed for luxury auto dealers
 ---
 
 ## 🏗 System Architecture
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    USER INTERFACE LAYER (Web)               │
-│  ┌──────────────────────┐    ┌──────────────────────┐       │
-│  │   Voice Centric Hub  │    │   WebSocket Client   │       │
-│  │  (Pulse Animation)   │    │    (Socket.IO JS)    │       │
-│  └──────────────────────┘    └──────────────────────┘       │
-└───────────────────────────────┼─────────────────────────────┘
-                                │
-                    (Persistent Bi-directional Pipe)
-                                │
-┌───────────────────────────────▼─────────────────────────────┐
-│                   BACKEND ENGINE (Flask)                    │
-│  ┌────────────────────────────────────────────────────┐     │
-│  │  Agent Orchestrator (The Nervous System)           │     │
-│  │  • Flask-SocketIO Event Management                 │     │
-│  │  • State & Context Preservation                    │     │
-│  └────────────────────────────────────────────────────┘     │
-└───────────────────────────────┬─────────────────────────────┘
-                                │
-          ┌─────────────────────┼─────────────────────┐
-          ▼                     ▼                     ▼
-┌──────────────────┐  ┌──────────────────┐  ┌──────────────────┐
-│  Conversational  │  │    Knowledge     │  │     Booking      │
-│      Agent       │  │      Agent       │  │      Agent       │
-│ (GPT-4o-mini)    │  │ (JSON Inventory) │  │     (SQLite)     │
-└──────────────────┘  └──────────────────┘  └──────────────────┘
-```
+## 🏗 System Architecture
+
+The project's architecture is described with a Mermaid diagram in the repository so you can view and export a visual diagram locally.
+
+- Diagram source: [docs/architecture.mmd](docs/architecture.mmd)
+
+Key components:
+- **Browser UI** — Mic Hub, chat window, and Socket.IO client.
+- **Flask + Flask-SocketIO** — Web server that accepts WebSocket events and routes them to the orchestrator.
+- **Agent Orchestrator** — Central coordinator that maintains conversation state, booking details, and decides which agent handles the request.
+- **ConversationalAgent** — Intent detection, response generation (OpenAI LLM).
+- **KnowledgeAgent** — Reads `data/knowledge_base.json` for vehicle info and recommendations.
+- **BookingAgent** — Validates and finalizes bookings via `BookingService` (SQLite database).
+- **SpeechService** — Azure Cognitive Services for STT and TTS (microphone capture and audio bytes).
+- **Logging & Storage** — Daily logs in `logs/` and persistent bookings in `data/bookings.db`.
+
+This diagram reflects the runtime flows: client emits `start_voice` / `send_message`, the server routes to `AgentOrchestrator`, agents consult services (knowledge, booking, speech), responses are synthesized to audio and emitted back to the browser as `assistant_response` events (text + hex audio bytes).
 
 ---
 
+## Diagram rendering (local)
+
+Option 1 — Mermaid CLI (export PNG/SVG):
+
+```bash
+# install mmdc (requires Node.js)
+npm install -g @mermaid-js/mermaid-cli
+
+# render PNG
+mmdc -i docs/architecture.mmd -o docs/architecture.png
+
+# render SVG
+mmdc -i docs/architecture.mmd -o docs/architecture.svg
+```
+
+Option 2 — VS Code
+
+- Install the *Mermaid Preview* extension and open `docs/architecture.mmd` to preview and export.
+
+If you'd like, I can export `docs/architecture.png` and add it to the repo for quick viewing — tell me if you want that.
+
+---
 ## 📊 Information Flow
 *   **Connection:** The browser establishes a WebSocket connection with the server via socket.connect().
 *   **Trigger:** User clicks the Mic Hub; the client emits a start_voice event.
