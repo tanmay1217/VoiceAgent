@@ -151,8 +151,14 @@ class BookingAgent:
             }
     
     def validate_booking_details(self, details: Dict) -> Dict:
+    # List of fields that MUST be present for a premium booking
         required_fields = ['vehicle_id', 'vehicle_name', 'date', 'time', 'customer_name', 'customer_phone']
-        missing = [field for field in required_fields if not details.get(field) or details.get(field) == 'Not provided']
+        
+        # Check for missing fields or placeholders
+        missing = [
+            field for field in required_fields 
+            if not details.get(field) or details.get(field) in ["Not provided", "null", "None"]
+        ]
         
         if missing:
             return {
