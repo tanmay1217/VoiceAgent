@@ -1,0 +1,136 @@
+{
+  "dealership": {
+    "name": "Premium Auto Dealership",
+    "location": "123 Main Street, City, State",
+    "phone": "+1-555-0123",
+    "hours": "Mon-Sat: 9AM-7PM, Sun: 10AM-5PM"
+  },
+  "vehicles": [
+    {
+      "id": "sedan_001",
+      "category": "sedan",
+      "make": "Toyota",
+      "model": "Camry",
+      "year": 2024,
+      "variant": "XLE",
+      "price": 32500,
+      "features": [
+        "Adaptive Cruise Control",
+        "Lane Departure Warning",
+        "Leather Seats",
+        "Sunroof",
+        "Apple CarPlay"
+      ],
+      "colors": ["White", "Black", "Silver", "Blue"],
+      "fuel_type": "Hybrid",
+      "transmission": "Automatic",
+      "available": true
+    },
+    {
+      "id": "sedan_002",
+      "category": "sedan",
+      "make": "Honda",
+      "model": "Accord",
+      "year": 2024,
+      "variant": "Sport",
+      "price": 31000,
+      "features": [
+        "Collision Mitigation",
+        "Adaptive Cruise Control",
+        "Wireless Charging",
+        "Premium Audio System"
+      ],
+      "colors": ["Red", "White", "Black", "Gray"],
+      "fuel_type": "Gasoline",
+      "transmission": "Automatic",
+      "available": true
+    },
+    {
+      "id": "suv_001",
+      "category": "suv",
+      "make": "Ford",
+      "model": "Explorer",
+      "year": 2024,
+      "variant": "Limited",
+      "price": 48500,
+      "features": [
+        "4WD",
+        "Third Row Seating",
+        "360-degree Camera",
+        "Heated Seats",
+        "Power Liftgate",
+        "Co-Pilot 360"
+      ],
+      "colors": ["Black", "White", "Blue", "Red"],
+      "fuel_type": "Gasoline",
+      "transmission": "Automatic",
+      "available": true
+    },
+    {
+      "id": "suv_002",
+      "category": "suv",
+      "make": "Toyota",
+      "model": "Highlander",
+      "year": 2024,
+      "variant": "XLE",
+      "price": 46000,
+      "features": [
+        "AWD",
+        "Third Row Seating",
+        "Safety Sense 2.5",
+        "Panoramic Sunroof",
+        "Wireless Apple CarPlay"
+      ],
+      "colors": ["Silver", "White", "Black", "Blue"],
+      "fuel_type": "Hybrid",
+      "transmission": "Automatic",
+      "available": true
+    },
+    {
+      "id": "truck_001",
+      "category": "truck",
+      "make": "Ford",
+      "model": "F-150",
+      "year": 2024,
+      "variant": "Lariat",
+      "price": 55000,
+      "features": [
+        "4WD",
+        "Towing Package",
+        "Pro Trailer Backup Assist",
+        "Leather Seats",
+        "Bang & Olufsen Sound System"
+      ],
+      "colors": ["Black", "White", "Red", "Blue"],
+      "fuel_type": "Gasoline",
+      "transmission": "Automatic",
+      "available": true
+    },
+    {
+      "id": "electric_001",
+      "category": "electric",
+      "make": "Tesla",
+      "model": "Model 3",
+      "year": 2024,
+      "variant": "Long Range",
+      "price": 47500,
+      "features": [
+        "Autopilot",
+        "Premium Interior",
+        "Glass Roof",
+        "Supercharging Capability",
+        "Over-the-air Updates"
+      ],
+      "colors": ["White", "Black", "Blue", "Red", "Silver"],
+      "fuel_type": "Electric",
+      "transmission": "Single-Speed",
+      "range_miles": 358,
+      "available": true
+    }
+  ],
+  "test_drive_slots": {
+    "duration_minutes": 30,
+    "available_hours": ["9:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"],
+    "buffer_minutes": 15
+  }
+}

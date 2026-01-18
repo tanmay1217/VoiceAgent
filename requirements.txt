@@ -1,0 +1,34 @@
+# Core Dependencies - LangChain Only (No CrewAI needed!)
+langchain==0.1.20
+langchain-openai==0.1.0
+langchain-community==0.0.38
+langchain-core==0.1.52
+
+# Azure Speech Services (replaces Google Cloud Speech)
+azure-cognitiveservices-speech==1.35.0
+
+# OpenAI for LLM
+openai>=1.13.3,<2.0.0
+
+# Audio Processing
+pyaudio==0.2.14
+pydub==0.25.1
+wave==0.0.2
+
+# Database
+sqlalchemy==2.0.27
+
+# Utilities
+python-dotenv==1.0.1
+pydantic==2.6.1
+pydantic-settings==2.1.0
+python-dateutil==2.8.2
+
+# Web Framework (Optional)
+fastapi==0.109.2
+uvicorn[standard]==0.27.1
+
+# Development
+pytest==8.0.1
+black==24.2.0
+flake8==7.0.0
