@@ -67,29 +67,26 @@ def run_voice_mode(orchestrator: AgentOrchestrator):
 def run_text_mode(orchestrator: AgentOrchestrator):
     print("\n💬 TEXT MODE ACTIVATED")
     print("=" * 60)
-    print("Type your message and press Enter")
-    print("Type 'quit' to exit\n")
     
+    # NEW: Proactive Greeting
+    initial_greeting = orchestrator._handle_greeting()
+    print(f"🤖 Assistant: {initial_greeting}\n" + "-"*60)
+    
+    # Start the conversation history with the assistant's greeting
+    orchestrator.conversation_history.append({'role': 'assistant', 'content': initial_greeting})
+
     while True:
         user_input = input("You: ").strip()
-        
         if user_input.lower() == 'quit':
-            print("\n👋 Thank you for using our service. Goodbye!")
+            print("\n👋 Goodbye!")
             break
-        
         if not user_input:
             continue
-        
+            
         try:
             response = orchestrator.process_text_input(user_input)
-            print(f"\n🤖 Assistant: {response}\n")
-            print("-" * 60)
-            
-        except KeyboardInterrupt:
-            print("\n\n👋 Goodbye!")
-            break
+            print(f"\n🤖 Assistant: {response}\n" + "-"*60)
         except Exception as e:
-            logger.error(f"Error in text mode: {str(e)}")
             print(f"\n❌ Error: {str(e)}\n")
 
 
