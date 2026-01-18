@@ -35,15 +35,15 @@ A sophisticated, multi-agent AI concierge system designed to handle vehicle inqu
 ## 🏗 System Architecture
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    USER INTERFACE LAYER                      │
+│                    USER INTERFACE LAYER                     │
 │  ┌──────────────────────┐    ┌──────────────────────┐       │
 │  │   Voice Mode         │    │   Text Mode          │       │
-│  │  (Azure STT + TTS)   │    │  (Console Input)     │       │
+│  │  (Azure STT + TTS)   │    │                      │       │
 │  └──────────────────────┘    └──────────────────────┘       │
 └─────────────────────────────────────────────────────────────┘
                           ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                   ORCHESTRATOR LAYER                         │
+│                   ORCHESTRATOR LAYER                        │
 │  ┌────────────────────────────────────────────────────┐     │
 │  │  Agent Orchestrator (Brain)                        │     │
 │  │  • State Management                                │     │
@@ -106,29 +106,7 @@ Intent Detection → Route to Agent
                                 Create Booking
 ```
 ---
-### **3. Booking State Machine**
-```
-START
-  ↓
-Vehicle Selection
-  ↓ (store vehicle_id, vehicle_name)
-Date Input
-  ↓ (store date)
-Time Input
-  ↓ (store time, check availability)
-  ├─ Available? → Continue
-  └─ Taken? → Suggest alternatives → Loop to Time Input
-  ↓
-Customer Name
-  ↓ (extract and validate)
-Customer Phone (Optional)
-  ↓ (validate 10-digit format if provided)
-Create Booking
-  ↓
-Confirm & Exit
-```
 
----
 
 ## 🔄 Conversation Flow Examples
 
@@ -290,7 +268,7 @@ TTS_SPEAKING_RATE=1.0
 
 ---
 
-🚀 Running the Application
+
 ### **🚀 Running the Application**
 
 Web Mode (Recommended)
