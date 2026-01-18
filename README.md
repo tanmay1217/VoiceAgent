@@ -21,9 +21,8 @@ A sophisticated, full-stack AI concierge system designed for luxury auto dealers
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                          LAYER 1: CLIENT INTERFACE                           │
-│  [Socket.IO Client] <──> [UI State Manager] <──> [Web Audio API Engine]      │
-│  • Full-Duplex event handling (JSON + Binary Transport)                      │
-│  • Client-side Hex-to-WAV reconstruction for low-latency playback            │
+│                 [Socket.IO Client] <──> [UI State Manager]                   |
+│                                                                              │
 └──────────────────────────────────────┬───────────────────────────────────────┘
                                        │
                     [ TRANSPORT: Persistent TCP Tunnel ]
@@ -34,9 +33,6 @@ A sophisticated, full-stack AI concierge system designed for luxury auto dealers
 │                       LAYER 2: ORCHESTRATION ENGINE                          │
 │   ┌──────────────────────────────────────────────────────────────────────┐   │
 │   │                    AGENT ORCHESTRATOR (The Controller)               │   │
-│   │ • Session Persistence Manager (Tracking booking_details)             │   │
-│   │ • Priority-Based Intent Router (FSM Logic)                           │   │
-│   │ • Asynchronous Task Worker (Eventlet)                                │   │
 │   └───────┬──────────────────────────┬──────────────────────────┬────────┘   │
 │           │                          │                          │            │
 │   ┌───────▼────────┐         ┌───────▼────────┐         ┌───────▼────────┐   │
