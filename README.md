@@ -18,48 +18,43 @@ A sophisticated, full-stack AI concierge system designed for luxury auto dealers
 ---
 
 ## 🏗 System Architecture
-## 🏗 System Architecture
-
-The project's architecture is described with a Mermaid diagram in the repository so you can view and export a visual diagram locally.
-
-- Diagram source: [docs/architecture.mmd](docs/architecture.mmd)
-
-Key components:
-- **Browser UI** — Mic Hub, chat window, and Socket.IO client.
-- **Flask + Flask-SocketIO** — Web server that accepts WebSocket events and routes them to the orchestrator.
-- **Agent Orchestrator** — Central coordinator that maintains conversation state, booking details, and decides which agent handles the request.
-- **ConversationalAgent** — Intent detection, response generation (OpenAI LLM).
-- **KnowledgeAgent** — Reads `data/knowledge_base.json` for vehicle info and recommendations.
-- **BookingAgent** — Validates and finalizes bookings via `BookingService` (SQLite database).
-- **SpeechService** — Azure Cognitive Services for STT and TTS (microphone capture and audio bytes).
-- **Logging & Storage** — Daily logs in `logs/` and persistent bookings in `data/bookings.db`.
-
-This diagram reflects the runtime flows: client emits `start_voice` / `send_message`, the server routes to `AgentOrchestrator`, agents consult services (knowledge, booking, speech), responses are synthesized to audio and emitted back to the browser as `assistant_response` events (text + hex audio bytes).
-
----
-
-## Diagram rendering (local)
-
-Option 1 — Mermaid CLI (export PNG/SVG):
-
-```bash
-# install mmdc (requires Node.js)
-npm install -g @mermaid-js/mermaid-cli
-
-# render PNG
-mmdc -i docs/architecture.mmd -o docs/architecture.png
-
-# render SVG
-mmdc -i docs/architecture.mmd -o docs/architecture.svg
+```
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                          LAYER 1: CLIENT INTERFACE                           │
+│  [Socket.IO Client] <──> [UI State Manager] <──> [Web Audio API Engine]      │
+│  • Full-Duplex event handling (JSON + Binary Transport)                      │
+│  • Client-side Hex-to-WAV reconstruction for low-latency playback            │
+└──────────────────────────────────────┬───────────────────────────────────────┘
+                                       │
+                    [ TRANSPORT: Persistent TCP Tunnel ]
+                    (Protocol: WebSocket via Socket.IO)
+ <────────────────────────────────────────────────────────────────────────────>
+                                       │
+┌──────────────────────────────────────▼───────────────────────────────────────┐
+│                       LAYER 2: ORCHESTRATION ENGINE                          │
+│   ┌──────────────────────────────────────────────────────────────────────┐   │
+│   │                    AGENT ORCHESTRATOR (The Controller)               │   │
+│   │ • Session Persistence Manager (Tracking booking_details)             │   │
+│   │ • Priority-Based Intent Router (FSM Logic)                           │   │
+│   │ • Asynchronous Task Worker (Eventlet)                                │   │
+│   └───────┬──────────────────────────┬──────────────────────────┬────────┘   │
+│           │                          │                          │            │
+│   ┌───────▼────────┐         ┌───────▼────────┐         ┌───────▼────────┐   │
+│   │ CONVERSATIONAL │         │   KNOWLEDGE    │         │    BOOKING     │   │
+│   │     AGENT      │         │     AGENT      │         │     AGENT      │   │
+│   │ (NLP Pipeline) │         │ (Search Logic) │         │                │   │
+│   └───────┬────────┘         └───────┬────────┘         └───────┬────────┘   │
+└───────────┼──────────────────────────┼──────────────────────────┼────────────┘
+            │                          │                          │
+┌───────────▼───────────┐      ┌───────▼───────────┐      ┌───────▼───────────┐
+│   LAYER 3: COGNITION  │      │   LAYER 4: DATA   │      │  LAYER 5: I/O     │
+│ • GPT-4o-mini (LLM)   │      │ • Vehicle JSON KB │      │ • Azure STT/TTS   │
+│ • Structured Output   │      │ • SQLite DB       │      │ • Date-Log File   │
+└───────────────────────┘      └───────────────────┘      └───────────────────┘
 ```
 
-Option 2 — VS Code
-
-- Install the *Mermaid Preview* extension and open `docs/architecture.mmd` to preview and export.
-
-If you'd like, I can export `docs/architecture.png` and add it to the repo for quick viewing — tell me if you want that.
-
 ---
+
 ## 📊 Information Flow
 *   **Connection:** The browser establishes a WebSocket connection with the server via socket.connect().
 *   **Trigger:** User clicks the Mic Hub; the client emits a start_voice event.
