@@ -100,9 +100,6 @@ VoiceAgent/
 # Create and activate virtual environment
 python -m venv venv
 .\venv\Scripts\Activate.ps1  # Windows
-
-# Install required packages
-pip install flask-socketio eventlet langchain-openai azure-cognitiveservices-speech python-dotenv sqlalchemy python-dateutil
 ```
 
 **Step 2: Create Virtual Environment**
