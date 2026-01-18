@@ -38,6 +38,12 @@ Analyze the customer's message and identify:
 1. Intent: greeting, inquiry, booking, confirmation, modification, cancellation, or general
 2. Entities: vehicle_category (sedan/suv/truck/electric), vehicle_make, vehicle_model, date, time, customer_name, customer_phone
 3. Confidence: How confident you are (0.0 to 1.0)
+             
+Analyze the customer's message.
+CRITICAL RULES:
+- If the user says "yes", "please", "sure", "book it", or "okay", the intent is 'confirmation'.
+- If the user says "hi", "hello", "good morning", the intent is 'greeting'. 
+- NEVER label "yes" as a greeting.
 
 {format_instructions}"""),
             ("user", "{input}")
@@ -58,12 +64,12 @@ Context: {context}"""),
         ])
         
         self.booking_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Extract booking details from the conversation history.
+            ("system", """Extract booking details (vehicle_name, date, time, customer_name, customer_phone) from the conversation.
+            Pay attention to the Assistant's questions to understand what the User's short answers mean.
+            Example: If Assistant asks "What is your name?" and User says "John", then customer_name is "John".
             
-{format_instructions}
-
-If any field is missing, set it to null."""),
-            ("user", "Conversation:\n{conversation}")
+            {format_instructions}"""),
+            ("user", "Conversation History:\n{conversation}")
         ])
     
     def detect_intent(self, user_input: str) -> Dict:

@@ -151,8 +151,8 @@ class BookingAgent:
             }
     
     def validate_booking_details(self, details: Dict) -> Dict:
-        required_fields = ['vehicle_id', 'vehicle_name', 'date', 'time', 'customer_name']
-        missing = [field for field in required_fields if not details.get(field)]
+        required_fields = ['vehicle_id', 'vehicle_name', 'date', 'time', 'customer_name', 'customer_phone']
+        missing = [field for field in required_fields if not details.get(field) or details.get(field) == 'Not provided']
         
         if missing:
             return {
@@ -160,9 +160,6 @@ class BookingAgent:
                 'missing_fields': missing,
                 'message': f"I still need: {', '.join(missing)}"
             }
-        
-        if 'customer_phone' not in details or not details.get('customer_phone'):
-            details['customer_phone'] = 'Not provided'
         
         return {
             'valid': True,

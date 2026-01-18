@@ -29,7 +29,7 @@ def print_banner():
     ║                                                           ║
     ║   🚗  AUTO DEALERSHIP VOICE ASSISTANT  🚗                ║
     ║                                                           ║
-    ║   Multi-Agent Test Drive Booking System                  ║
+    ║   Multi-Agent Test Drive Booking System                   ║
     ║                                                           ║
     ╚═══════════════════════════════════════════════════════════╝
     """
