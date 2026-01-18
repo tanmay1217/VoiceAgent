@@ -18,10 +18,6 @@ class BookingAgent:
         self.booking_service = booking_service
 
     def validate_phone(self, phone_str: str) -> bool:
-        """
-        Validates that the phone number contains exactly 10 digits.
-        Removes common formatting characters like -, ( ), and spaces.
-        """
         if not phone_str:
             return False
             
@@ -131,9 +127,6 @@ class BookingAgent:
             return {'success': False, 'message': "There was an error saving your booking."}
         
     def validate_booking_details(self, details: Dict) -> Dict:
-        """
-        Validates all required fields and specific formats for the booking.
-        """
         required_fields = ['vehicle_id', 'vehicle_name', 'date', 'time', 'customer_name', 'customer_phone']
         
         # 1. Check for missing fields
