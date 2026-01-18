@@ -83,10 +83,9 @@ class SpeechService:
             logger.error(f"STT error: {str(e)}")
             return None
     
-    def text_to_speech(self, text: str, output_file: Optional[str] = None) -> bytes:
+    def text_to_speech(self, text: str) -> bytes:
+        """Synthesizes text and returns the audio bytes (for web/API use)."""
         try:
-            logger.info(f"Converting text to speech: {text[:50]}...")
-            
             ssml = f"""
             <speak version='1.0' xml:lang='{settings.SPEECH_LANGUAGE}'>
                 <voice name='{settings.TTS_VOICE_NAME}'>
@@ -97,39 +96,22 @@ class SpeechService:
             </speak>
             """
             
-            if output_file:
-                audio_config = speechsdk.AudioConfig(filename=output_file)
-                speech_synthesizer = speechsdk.SpeechSynthesizer(
-                    speech_config=self.speech_config,
-                    audio_config=audio_config
-                )
-                result = speech_synthesizer.speak_ssml(ssml)
-                
-                if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-                    logger.info(f"Audio saved to {output_file}")
-                    with open(output_file, 'rb') as f:
-                        return f.read()
-            else:
-                speech_synthesizer = speechsdk.SpeechSynthesizer(
-                    speech_config=self.speech_config,
-                    audio_config=None
-                )
-                result = speech_synthesizer.speak_ssml(ssml)
+            # Configure to return audio data to stream instead of local speaker
+            speech_synthesizer = speechsdk.SpeechSynthesizer(
+                speech_config=self.speech_config, 
+                audio_config=None # None means don't play to local hardware
+            )
+            result = speech_synthesizer.speak_ssml(ssml)
             
             if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
-                return result.audio_data if result.audio_data else b''
-            elif result.reason == speechsdk.ResultReason.Canceled:
-                cancellation = result.cancellation_details
-                logger.error(f"Speech synthesis canceled: {cancellation.reason}")
-                if cancellation.reason == speechsdk.CancellationReason.Error:
-                    logger.error(f"Error details: {cancellation.error_details}")
-                raise Exception(f"TTS failed: {cancellation.error_details}")
-            
-            return b''
-            
+                return result.audio_data
+            else:
+                logger.error(f"Speech synthesis failed: {result.reason}")
+                return b''
+                
         except Exception as e:
-            logger.error(f"TTS error: {str(e)}")
-            raise
+            logger.error(f"TTS Error: {str(e)}")
+            return b''
     
     def listen_and_transcribe(self) -> Optional[str]:
         return self.speech_to_text_from_microphone()

@@ -16,11 +16,7 @@ logger = logging.getLogger(__name__)
 class AgentOrchestrator:
     
     def __init__(self):
-        self.llm = ChatOpenAI(
-            model=settings.OPENAI_MODEL,
-            temperature=settings.OPENAI_TEMPERATURE
-        )
-        
+        self.llm = ChatOpenAI(model=settings.OPENAI_MODEL, temperature=settings.OPENAI_TEMPERATURE)
         self.knowledge_service = KnowledgeService()
         self.booking_service = BookingService()
         self.speech_service = SpeechService()
@@ -29,8 +25,7 @@ class AgentOrchestrator:
         self.knowledge_agent = KnowledgeAgent(self.llm, self.knowledge_service)
         self.booking_agent = BookingAgent(self.llm, self.booking_service)
         
-        self.conversation_history: List[Dict] = []
-        self.current_intent = None
+        self.conversation_history = []
         self.booking_details = {}
         
         logger.info("Agent orchestrator initialized")
@@ -52,149 +47,102 @@ class AgentOrchestrator:
         return response
     
     def process_text_input(self, user_input: str) -> str:
-        """Processes the user text input and routes it to the correct agent logic."""
-        self.conversation_history.append({
-            'role': 'user',
-            'content': user_input
-        })
+        self.conversation_history.append({'role': 'user', 'content': user_input})
         
-        # 1. Detect Intent
         intent_data = self.conversational_agent.detect_intent(user_input)
         intent = intent_data.get('intent', 'general')
         entities = intent_data.get('entities', {})
         
-        # 2. Check if we are currently in an active booking session
-        # A session is active if a vehicle_id has been selected but booking isn't finished
         is_booking_active = bool(self.booking_details.get('vehicle_id'))
-        
-        logger.info(f"Intent: {intent} | Active Booking: {is_booking_active}")
+        logger.info(f"Intent: {intent} | Booking Active: {is_booking_active}")
 
-        # 3. Context Extraction: Update details from history if we are booking
+        # 1. Context Extraction
         if intent == 'booking' or is_booking_active:
             history_str = "\n".join([f"{m['role']}: {m['content']}" for m in self.conversation_history[-3:]])
             extracted = self.conversational_agent.extract_booking_details(history_str)
-            
             for key, value in extracted.items():
                 if value and value not in ["null", "None"]:
-                    # SAFETY: Don't let history/user slang overwrite a locked official vehicle name
-                    if key in ['vehicle_id', 'vehicle_name'] and is_booking_active:
-                        continue
+                    if key in ['vehicle_id', 'vehicle_name'] and is_booking_active: continue
                     self.booking_details[key] = value
 
-        # 4. Routing Logic
+        # 2. Routing
         if intent == 'greeting' and not is_booking_active:
             response = self._handle_greeting()
-        
         elif intent == 'inquiry':
             response = self._handle_inquiry(intent_data)
-        
-        # ROUTE TO BOOKING ONLY IF: 
-        # a) User explicitly wants to book 
-        # b) We have a car selected and they are giving info (general/confirmation/modification)
         elif intent == 'booking' or (is_booking_active and intent in ['confirmation', 'general', 'modification']):
             response = self._handle_booking(intent_data)
-        
         elif intent == 'cancellation':
             response = self._handle_cancellation()
-        
         else:
-            # Handle post-booking "thanks", "bye", or general chat
-            context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in self.conversation_history[-5:]])
+            context = "\n".join([f"{m['role']}: {m['content']}" for m in self.conversation_history[-5:]])
             response = self.conversational_agent.generate_response(context, user_input)
         
-        self.conversation_history.append({
-            'role': 'assistant',
-            'content': response
-        })
-        
+        self.conversation_history.append({'role': 'assistant', 'content': response})
         return response
-    
 
     def _handle_greeting(self) -> str:
-        return ("Hello! Welcome to Premium Auto Dealership. "
-                "I can help you learn about our vehicles and schedule a test drive. "
-                "What can I help you with today?")
+        return "Hello! Welcome to Premium Auto Dealership. I can help you learn about our vehicles and schedule a test drive. What can I help you with today?"
     
     def _handle_inquiry(self, intent_data: Dict) -> str:
-        query_result = self.knowledge_agent.query_vehicles(intent_data)
-        vehicles = query_result['vehicles']
-        
-        if not vehicles:
-            return ("I'm sorry, we don't have any vehicles matching those criteria. "
-                    "Would you like to hear about our other available vehicles?")
-        
-        response = query_result['response']
-        
-        if len(vehicles) == 1:
-            self.booking_details['vehicle_id'] = vehicles[0]['id']
-            self.booking_details['vehicle_name'] = (
-                f"{vehicles[0]['year']} {vehicles[0]['make']} {vehicles[0]['model']}"
-            )
-            response += " Would you like to schedule a test drive?"
-        else:
-            response += " Which one interests you most?"
-        
-        return response
+        res = self.knowledge_agent.query_vehicles(intent_data)
+        if res['vehicles'] and len(res['vehicles']) == 1:
+            v = res['vehicles'][0]
+            self.booking_details['vehicle_id'], self.booking_details['vehicle_name'] = v['id'], f"{v['year']} {v['make']} {v['model']}"
+            return res['response'] + " Would you like to schedule a test drive?"
+        return res['response']
     
     def _handle_booking(self, intent_data: Dict) -> str:
-        """Manages the step-by-step collection of booking data and vehicle selection."""
         entities = intent_data.get('entities', {})
         
-        # 1. VEHICLE SELECTION: If no vehicle is selected yet
+        # 1. Vehicle Selection
         if 'vehicle_id' not in self.booking_details:
-            make = entities.get('vehicle_make') or entities.get('make')
-            model = entities.get('vehicle_model') or entities.get('model')
-            cat = entities.get('vehicle_category') or entities.get('category')
-            
-            # If the user just said "book it" without specifying what, ask for the car
-            if not any([make, model, cat]):
-                return "Which vehicle would you like to test drive? We have sedans, SUVs, trucks, and electric models."
-
-            search_results = self.knowledge_service.search_vehicles(make=make, model=model, category=cat)
-            
-            if len(search_results) == 1:
-                v = search_results[0]
-                # Lock the canonical (official) name from knowledge_base.json
+            make = entities.get('vehicle_make')
+            model = entities.get('vehicle_model')
+            res = self.knowledge_service.search_vehicles(make=make, model=model)
+            if len(res) == 1:
+                v = res[0]
                 self.booking_details['vehicle_id'] = v['id']
                 self.booking_details['vehicle_name'] = f"{v['year']} {v['make']} {v['model']}"
-            elif len(search_results) > 1:
-                # Ambiguous selection - help the user narrow it down
-                options = " or the ".join([f"{v['year']} {v['model']}" for v in search_results[:2]])
-                return f"We have a few models matching that. Did you mean the {options}?"
+            elif len(res) > 1:
+                return "We have a few models matching that. Did you mean the " + " or the ".join([f"{v['year']} {v['model']}" for v in res[:2]]) + "?"
             else:
-                return "I'm sorry, I couldn't find that specific model. Would you like to hear about our available sedans or SUVs?"
+                return "Which vehicle would you like to test drive? We have sedans, SUVs, and trucks."
 
-        # 2. UPDATE REMAINING ENTITIES: date, time, name, phone
+        # 2. Update basic info
         for key in ['date', 'time', 'customer_name', 'customer_phone']:
-            if key in entities and entities[key]:
-                self.booking_details[key] = entities[key]
+            if key in entities and entities[key]: self.booking_details[key] = entities[key]
 
-        # 3. VALIDATION: Check what is missing and prompt specifically for it
-        validation = self.booking_agent.validate_booking_details(self.booking_details)
-        
-        if not validation['valid']:
-            missing = validation['missing_fields']
+        # 3. IMMEDIATE AVAILABILITY CHECK
+        if self.booking_details.get('date') and self.booking_details.get('time') and not self.booking_details.get('customer_name'):
+            d_obj = self.booking_agent.parse_date(self.booking_details['date'])
+            t_tup = self.booking_agent.parse_time(self.booking_details['time'])
+            if d_obj and t_tup:
+                dt_check = d_obj.replace(hour=t_tup[0], minute=t_tup[1], second=0, microsecond=0)
+                avail = self.booking_agent.check_availability(dt_check)
+                if not avail['available']:
+                    self.booking_details['time'] = None
+                    return avail['message']
+
+        # 4. Validation
+        val = self.booking_agent.validate_booking_details(self.booking_details)
+        if not val['valid']:
+            if 'invalid_fields' in val:
+                if 'customer_phone' in val['invalid_fields']: self.booking_details['customer_phone'] = None
+                return val['message']
             
-            if 'date' in missing:
-                return "What day would you like to come in for the test drive?"
-            elif 'time' in missing:
-                return f"Great, I have you down for the {self.booking_details.get('vehicle_name')}. What time works best for you?"
-            elif 'customer_name' in missing:
-                return "Perfect. May I have your name please?"
-            elif 'customer_phone' in missing:
-                return f"Thanks {self.booking_details.get('customer_name')}. And what is a good phone number to reach you at?"
+            missing = val.get('missing_fields', [])
+            if 'date' in missing: return "What day would you like to come in?"
+            if 'time' in missing: return f"What time works best for the {self.booking_details['vehicle_name']}?"
+            if 'customer_name' in missing: return f"Perfect, the {self.booking_details['time']} slot is available. May I have your name please?"
+            if 'customer_phone' in missing: return f"Thanks {self.booking_details['customer_name']}. And what is a good 10-digit phone number?"
 
-        # 4. FINALIZATION: Details are complete, create the entry in DB
-        logger.info(f"Finalizing booking: {self.booking_details}")
+        # 5. Finalize
         result = self.booking_agent.create_booking(self.booking_details)
-        
         if result['success']:
-            # IMPORTANT: Clear the booking session state so the user can transition back to general chat
-            self.booking_details = {} 
-            return result['message'] + " Is there anything else I can help you with today?"
-        else:
-            return result['message']
-            
+            self.booking_details = {}
+            return result['message'] + " Is there anything else I can help you with?"
+        return result['message']
     def _handle_confirmation(self) -> str:
         if self.booking_details and 'vehicle_id' in self.booking_details:
             result = self.booking_agent.create_booking(self.booking_details)
@@ -209,7 +157,7 @@ class AgentOrchestrator:
     
     def _handle_cancellation(self) -> str:
         self.booking_details = {}
-        return "No problem. Is there anything else I can help you with?"
+        return "No problem, I've cleared the request. What else can I do for you?"
     
     def _handle_general(self, user_input: str) -> str:
         if self.booking_details:
