@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 from dateutil import parser
 from typing import Dict, Optional
 import logging
+import re
+
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +15,20 @@ class BookingAgent:
     def __init__(self, llm: ChatOpenAI, booking_service: BookingService):
         self.llm = llm
         self.booking_service = booking_service
+
+    def validate_phone(self, phone_str: str) -> bool:
+        """
+        Validates that the phone number contains exactly 10 digits.
+        Removes common formatting characters like -, ( ), and spaces.
+        """
+        if not phone_str:
+            return False
+            
+        # Remove non-numeric characters
+        clean_phone = re.sub(r'\D', '', phone_str)
+        
+        # Check if it's exactly 10 digits
+        return len(clean_phone) == 10
     
     def parse_date(self, date_str: str) -> Optional[datetime]:
         try:
@@ -71,6 +87,9 @@ class BookingAgent:
             return None
     
     def check_availability(self, booking_date: datetime) -> Dict:
+        """
+        Checks if a specific datetime is available for a test drive.
+        """
         if booking_date < datetime.now():
             return {
                 'available': False,
@@ -82,27 +101,29 @@ class BookingAgent:
         if is_available:
             return {
                 'available': True,
-                'message': f"Great! {booking_date.strftime('%A, %B %d at %I:%M %p')} is available."
+                'message': f"Great! {booking_date.strftime('%I:%M %p')} is available."
             }
         else:
-            available_slots = self.booking_service.get_available_slots(
-                booking_date,
-                ["9:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"]
-            )
+            # Get available slots from Knowledge Base settings (or hardcoded here)
+            standard_hours = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00"]
+            available_slots = self.booking_service.get_available_slots(booking_date, standard_hours)
             
             if available_slots:
-                slots_str = ", ".join(available_slots[:3])
+                # Format the first few slots for a cleaner voice response
+                formatted_slots = [datetime.strptime(s, "%H:%M").strftime("%I:%M %p") for s in available_slots[:2]]
+                slots_str = " or ".join(formatted_slots)
                 return {
                     'available': False,
-                    'message': f"That time is not available. How about {slots_str}?",
+                    'message': f"I'm sorry, that time is already booked. Would {slots_str} work for you instead?",
                     'alternatives': available_slots
                 }
             else:
                 return {
                     'available': False,
-                    'message': "We don't have any availability that day. Could you try another date?"
+                    'message': "We are fully booked for that day. Could you try a different date?"
                 }
-    
+            
+            
     def create_booking(self, booking_details: Dict) -> Dict:
         try:
             date_obj = self.parse_date(booking_details.get('date', 'tomorrow'))
@@ -151,10 +172,12 @@ class BookingAgent:
             }
     
     def validate_booking_details(self, details: Dict) -> Dict:
-    # List of fields that MUST be present for a premium booking
+        """
+        Validates all required fields and specific formats for the booking.
+        """
         required_fields = ['vehicle_id', 'vehicle_name', 'date', 'time', 'customer_name', 'customer_phone']
         
-        # Check for missing fields or placeholders
+        # 1. Check for missing fields
         missing = [
             field for field in required_fields 
             if not details.get(field) or details.get(field) in ["Not provided", "null", "None"]
@@ -164,7 +187,16 @@ class BookingAgent:
             return {
                 'valid': False,
                 'missing_fields': missing,
-                'message': f"I still need: {', '.join(missing)}"
+                'message': f"I still need your {missing[0].replace('customer_', '')}."
+            }
+
+        # 2. Specific Validation: Phone Number
+        phone = details.get('customer_phone', '')
+        if not self.validate_phone(phone):
+            return {
+                'valid': False,
+                'invalid_fields': ['customer_phone'],
+                'message': "That phone number doesn't seem right. Could you please provide a valid 10-digit mobile number?"
             }
         
         return {

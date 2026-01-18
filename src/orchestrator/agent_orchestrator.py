@@ -140,13 +140,12 @@ class AgentOrchestrator:
         """Manages the step-by-step collection of booking data and vehicle selection."""
         entities = intent_data.get('entities', {})
         
-        # 1. VEHICLE SELECTION: If no vehicle is selected yet
+        # 1. VEHICLE SELECTION
         if 'vehicle_id' not in self.booking_details:
             make = entities.get('vehicle_make') or entities.get('make')
             model = entities.get('vehicle_model') or entities.get('model')
             cat = entities.get('vehicle_category') or entities.get('category')
             
-            # If the user just said "book it" without specifying what, ask for the car
             if not any([make, model, cat]):
                 return "Which vehicle would you like to test drive? We have sedans, SUVs, trucks, and electric models."
 
@@ -154,47 +153,66 @@ class AgentOrchestrator:
             
             if len(search_results) == 1:
                 v = search_results[0]
-                # Lock the canonical (official) name from knowledge_base.json
                 self.booking_details['vehicle_id'] = v['id']
                 self.booking_details['vehicle_name'] = f"{v['year']} {v['make']} {v['model']}"
             elif len(search_results) > 1:
-                # Ambiguous selection - help the user narrow it down
                 options = " or the ".join([f"{v['year']} {v['model']}" for v in search_results[:2]])
                 return f"We have a few models matching that. Did you mean the {options}?"
             else:
                 return "I'm sorry, I couldn't find that specific model. Would you like to hear about our available sedans or SUVs?"
 
-        # 2. UPDATE REMAINING ENTITIES: date, time, name, phone
+        # 2. UPDATE ENTITIES (date, time, name, phone)
         for key in ['date', 'time', 'customer_name', 'customer_phone']:
             if key in entities and entities[key]:
                 self.booking_details[key] = entities[key]
 
-        # 3. VALIDATION: Check what is missing and prompt specifically for it
+        # 3. IMMEDIATE AVAILABILITY CHECK (The Fix)
+        # If we have vehicle, date, and time, but NO name yet, check availability now.
+        if self.booking_details.get('date') and self.booking_details.get('time') and not self.booking_details.get('customer_name'):
+            # Convert strings to a datetime object for checking
+            date_obj = self.booking_agent.parse_date(self.booking_details['date'])
+            time_tuple = self.booking_agent.parse_time(self.booking_details['time'])
+            
+            if date_obj and time_tuple:
+                h, m = time_tuple
+                dt_check = date_obj.replace(hour=h, minute=m, second=0, microsecond=0)
+                availability = self.booking_agent.check_availability(dt_check)
+                
+                if not availability['available']:
+                    # Clear the invalid time so the user has to provide a new one
+                    self.booking_details['time'] = None 
+                    return availability['message'] # "That time is not available. How about 10:00?"
+
+        # 4. VALIDATION & PROGRESSION
         validation = self.booking_agent.validate_booking_details(self.booking_details)
         
         if not validation['valid']:
-            missing = validation['missing_fields']
+            # Handle invalid phone specifically
+            if 'invalid_fields' in validation and 'customer_phone' in validation['invalid_fields']:
+                self.booking_details['customer_phone'] = None
+                return validation['message']
+                
+            missing = validation.get('missing_fields', [])
             
             if 'date' in missing:
                 return "What day would you like to come in for the test drive?"
             elif 'time' in missing:
                 return f"Great, I have you down for the {self.booking_details.get('vehicle_name')}. What time works best for you?"
             elif 'customer_name' in missing:
-                return "Perfect. May I have your name please?"
+                return f"Perfect, the {self.booking_details.get('time')} slot is available. May I have your name please?"
             elif 'customer_phone' in missing:
-                return f"Thanks {self.booking_details.get('customer_name')}. And what is a good phone number to reach you at?"
+                return f"Thanks {self.booking_details.get('customer_name')}. And what is a good 10-digit phone number to reach you at?"
 
-        # 4. FINALIZATION: Details are complete, create the entry in DB
+        # 5. FINALIZATION
         logger.info(f"Finalizing booking: {self.booking_details}")
         result = self.booking_agent.create_booking(self.booking_details)
         
         if result['success']:
-            # IMPORTANT: Clear the booking session state so the user can transition back to general chat
             self.booking_details = {} 
             return result['message'] + " Is there anything else I can help you with today?"
         else:
             return result['message']
-            
+    
     def _handle_confirmation(self) -> str:
         if self.booking_details and 'vehicle_id' in self.booking_details:
             result = self.booking_agent.create_booking(self.booking_details)
