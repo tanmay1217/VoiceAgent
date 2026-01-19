@@ -1,6 +1,6 @@
 ## 🚗 Premium Auto Dealership Voice AI Agent
 ## Demo video
-## Visit https://www.loom.com/share/1ee525c0de5e429db2cea86857898a55
+## https://www.loom.com/share/1ee525c0de5e429db2cea86857898a55
 
 **Real-Time WebSocket-Powered Luxury Concierge** 
 
