@@ -1,4 +1,7 @@
 ## 🚗 Premium Auto Dealership Voice AI Agent
+## Demo video
+## Visit https://www.loom.com/share/1ee525c0de5e429db2cea86857898a55
+
 **Real-Time WebSocket-Powered Luxury Concierge** 
 
 A sophisticated, full-stack AI concierge system designed for luxury auto dealerships. This system utilizes a bi-directional WebSocket architecture to provide near-instantaneous voice and text interactions, high-fidelity neural synthesis, and robust multi-agent orchestration.
@@ -48,20 +51,6 @@ A sophisticated, full-stack AI concierge system designed for luxury auto dealers
 │ • Structured Output   │      │ • SQLite DB       │      │ • Date-Log File   │
 └───────────────────────┘      └───────────────────┘      └───────────────────┘
 ```
-
----
-
-## 📊 Information Flow
-*   **Connection:** The browser establishes a WebSocket connection with the server via socket.connect().
-*   **Trigger:** User clicks the Mic Hub; the client emits a start_voice event.
-*   **Capture:** The server-side Azure SDK captures the microphone input, transcribes it, and passes it to the Orchestrator.
-*   **Processing:** The Orchestrator routes the input to the correct agent. If a booking is active, it performs an Immediate Availability Check.
-*   **Emission:** The server emits an assistant_response event containing:
-*   **user_said:** The transcribed text.
-*   **response:** The AI's reply.
-*   **audio:"**: Hex-encoded audio bytes for instant playback.
-*   **Playback**: The JS client decodes the hex, creates a WAV blob, and plays the "Ava" Neural voice.
-
 
 ---
 
@@ -151,6 +140,41 @@ python app.py
 ## Visit http://127.0.0.1:5000 in your browser.
 ## Click "ENTER SHOWROOM" to start.
 
+---
+
+## 🧪 Testing
+
+### **Manual Testing Scenarios**
+
+#### **Test 1: Quick Booking**
+```
+Input: "Book Toyota Camry for tomorrow at 11 AM"
+Expected: Agent collects name → creates booking
+```
+
+#### **Test 2: Step-by-Step**
+```
+Input: "I want to book a test drive"
+Expected: Agent asks for vehicle → date → time → name
+```
+
+#### **Test 3: Vehicle Inquiry**
+```
+Input: "What SUVs do you have?"
+Expected: Lists 2 SUVs with details
+```
+
+#### **Test 4: Option Selection**
+```
+Input: "What sedans?" → "Option 1"
+Expected: Selects Toyota Camry
+```
+
+#### **Test 5: Graceful Exit**
+```
+Input: "Bye"
+Expected: Says goodbye and exits
+```
 ---
 
 ## Security & Validation
